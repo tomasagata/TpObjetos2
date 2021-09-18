@@ -1,10 +1,37 @@
+// --- START --- : Funciones auxiliares
+
+function aTamanio(string, tam){
+    switch (string.length >= tam){
+        case true:
+            return string.substring(0, tam-1);
+        case false:
+            return " ".repeat(tam-string.length) + string;
+    }
+}
+
+function tipoProducto(prod){
+    if(prod instanceof ProductoPerecederoRefrigeracion){
+        return "Refri: " + prod.tipoRefrigeracion;
+    }
+    else if(prod instanceof ProductoPerecedero){
+        return "Perecedero";
+    }
+    else if(prod instanceof ProductoLineaBlanca){
+        return "Linea blanca";
+    }
+    else if(prod instanceof Producto){
+        return "Generico";
+    }
+    return "No es producto";
+}
+
 // --- START --- : Objetos de tipo Lista
 
 /* Cliente */{
     function Cliente(nombre, apellido){
         Cliente.contador = ++Cliente.contador || 1;
 
-        var id = contador;
+        var id = Cliente.contador;
         this.nombre = nombre;
         this.apellido = apellido;
         this.carrito = new Carrito();
@@ -87,7 +114,18 @@
     };
 
     Lista.prototype.mostrarLista = function() {
-        this.listaProductos.forEach(producto => console.log(producto));
+        console.log("Mostrando Stock:\n\n      [     id     ][      Nombre      ][       Tipo       ][  Precio C/U  ][ Cantidad Stock ]\n");
+        let i = 0;
+        this.listaProductos.forEach(producto => {
+            let str = aTamanio(""+i, 4) + ")  " + aTamanio(producto.getId() + "", 11)+"   " + aTamanio(producto.nombreProducto, 17) + "   " +
+            aTamanio(tipoProducto(producto), 17) + "   " + aTamanio(producto.costoProducto+"", 13) + "   " + aTamanio(producto.cantidadProducto+"", 15) +"\n";
+
+            i++;
+            console.log(str);
+            
+        });
+
+        console.log("\n\n");
     };
 
 }
@@ -206,7 +244,18 @@
     };
 
     Carrito.prototype.mostrarCarrito = function() {
-        this.mostrarLista();
+        console.log("Mostrando Carrito:\n\n      [     id     ][      Nombre      ][       Tipo       ][  Precio C/U  ][ Cantidad Añadida ][     Total     ]\n");
+        let i = 0;
+        let suma =0;
+        this.listaProductos.forEach(producto => {
+            let str = aTamanio(""+i, 4) + ")  " + aTamanio(producto.prod.getId() + "", 11)+"   " + aTamanio(producto.prod.nombreProducto, 17) + "   " +
+            aTamanio(tipoProducto(producto.prod), 17) + "   " + aTamanio(producto.prod.costoProducto + "", 13) + "   " + aTamanio(producto.cantidadAniadida + "", 17) + "   " + aTamanio("" + (producto.cantidadAniadida*producto.prod.costoProducto), 14) +"\n";
+
+            i++;
+            suma += producto.prod.costoProducto*producto.cantidadAniadida;
+            console.log(str);
+        });
+        console.log(aTamanio(" ", 107) + suma + "\n\n");
     };
 
     Carrito.prototype.actualizarDatosCarrito = function(){
@@ -238,7 +287,7 @@
     function Producto(nombre, costo, cantidad){
         Producto.contador = ++Producto.contador || 1;
 
-        var id = contador;
+        var id = Producto.contador;
         this.nombreProducto = nombre;
         this.costoProducto = costo;
         this.cantidadProducto = cantidad;
@@ -296,7 +345,7 @@
 
     ProductoEnCarrito.prototype.validarDisponibilidad = function(){
         return this.prod.cantidadProducto >= this.cantidadAniadida;
-    }
+    };
 }
 
 /* Dimensiones */{
@@ -323,7 +372,30 @@
 
     Dimensiones.prototype.imprimirDirecciones = function(){
         return this.alto + "x" + this.ancho + "x" + this.profundidad;
-    }
+    };
 }
 
 // --- START --- : Programa
+
+let producto1 = new Producto("Producto 1", 50, 30);
+let producto2 = new Producto("Producto 2", 20, 80);
+let producto3 = new Producto("Producto 3", 100, 35);
+let stock = new Stock();
+stock.agregarProductos([producto1, producto2, producto3]);
+stock.actualizarStock(3, 5);
+stock.actualizarStock(1, 50);
+//console.log(stock.buscarProducto(1, stock.buscarPorId));
+//console.log(stock.buscarProducto("2", stock.buscarPorNombre);
+
+let cliente = new Cliente("Juan", "Perez");
+cliente.agregarProducto(producto1, 80);
+stock.actualizarStock(1, -1);
+stock.mostrarStock();
+cliente.agregarProducto(producto2, 40);
+cliente.verCarrito();
+//cliente.comprar(stock);
+//cliente.verCarrito();
+//stock.mostrarStock();
+
+//console.log(cliente.buscarProductoPorId(1));
+//console.log(cliente.buscarProductoPorCantidad(79));
