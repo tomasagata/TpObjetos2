@@ -1,5 +1,6 @@
 // --- START --- : Funciones auxiliares
 
+// Función para dar formato a los strings al mostrar en Tabla
 const aTamanio = (string, tam) => {
     switch (string.length >= tam){
         case true:
@@ -9,6 +10,7 @@ const aTamanio = (string, tam) => {
     }
 }
 
+// Función que retorna un String que contiene el nombre del tipo de producto
 const tipoProducto = prod => {
     if(prod instanceof ProductoPerecederoRefrigeracion){
         return "Refrigeracion";
@@ -25,12 +27,10 @@ const tipoProducto = prod => {
     return "No es producto";
 }
 
-// --- START --- : Objetos de tipo Lista
-
 /* Cliente */{
     function Cliente(nombre, apellido){
         Cliente.contador = ++Cliente.contador || 1;
-
+        
         var id = Cliente.contador;
         this.nombre = nombre;
         this.apellido = apellido;
@@ -40,86 +40,99 @@ const tipoProducto = prod => {
             return id;
         };
     }
-
+    
+    /*  SETTERS Y GETTERS */
     Object.defineProperty(Cliente.prototype, "id", {
         get() {return this.getId()}
     });
-
+    
     Object.defineProperty(Cliente.prototype, "nombre", {
         set(nombre) {
             if (nombre.trim() == '') {
                 console.log("[-] Ingrese el nombre del cliente");
             } else {
+                // Eliminación de espacios en blanco innecesarios
                 this.nombreCliente = nombre.trim().split(/\s+/).join(' ');
             }
         }
     });
-
+    
     Object.defineProperty(Cliente.prototype, "apellido", {
         set(apellido) {
             if (apellido.trim() == '') {
                 console.log("[-] Ingrese el apellido del cliente");
             } else {
+                // Eliminación de espacios en blanco innecesarios
                 this.apellidoCliente = apellido.trim().split(/\s+/).join(' ');
             }
         }
     });
-
+    
+    /* FUNCIONES ADICIONALES */
     Cliente.prototype.presentarCliente = function() {
         console.log(`[+] Este es el cliente ${this.nombreCliente} ${this.apellidoCliente} (id: ${this.id})`);
     }
-
+    
+    // Agregar un producto al carrito
     Cliente.prototype.agregarProducto = function(producto, cantidad) {
+        // Validar si el producto pasado por parámetro es un producto verdaderamente
         if (producto instanceof Producto) {
             this.carrito.agregarProducto(new ProductoEnCarrito(producto, cantidad));
         } else {
             console.log("[-] Solo puede agregar productos al carrito");
         }
     };
-
+    
+    // Funciones de visualización, búsqueda y edición del carrito, llamadas desde el objeto del cliente
     Cliente.prototype.verCarrito = function() {
         this.carrito.mostrarCarrito();
     };
-
+    
     Cliente.prototype.buscarProductoPorId = function(id) {
         return this.carrito.buscarProducto(id, this.carrito.buscarPorId);
     };
-
+    
     Cliente.prototype.buscarProductoPorNombre = function(nombre) {
         return this.carrito.buscarProducto(nombre, this.carrito.buscarPorNombre);
     };
-
+    
     Cliente.prototype.buscarProductoPorCostoMayor = function(costo) {
         return this.carrito.buscarProducto(costo, this.carrito.buscarPorCostoMayor);
     };
-
+    
     Cliente.prototype.buscarProductoPorCantidad = function(cantidad) {
         return this.carrito.buscarProducto(cantidad, this.carrito.buscarPorCantidad);
     };
-
+    
     Cliente.prototype.quitarProductoDelCarrito = function(id, razon) {
         this.carrito.quitarProducto(id, razon);
     };
-
+    
+    // Función de compra: realiza la compra, validando las cantidades contra el stock y vaciando el carrito
     Cliente.prototype.comprar = function(stock) {
         this.carrito.confirmarCompra(stock);
     };
 }
 
+// --- START --- : Objetos de tipo Lista
 /* Lista */{
     function Lista(){
+        // Se inicializa la lista como un array vacío
         this.listaProductos = [];
     }
-
+    
     Lista.prototype.agregarProducto = function(producto) {
         this.listaProductos.push(producto);
     };
 
+    // Esta función, al igual que agregarProducto, permite agregar a la lista un producto, con la diferencia de que simula ser una carga masiva, desde un array
     Lista.prototype.agregarProductos = function(productos) {
-        productos.forEach(producto => this.agregarProducto(producto));
+        if(productos != undefined){
+            productos.forEach(producto => this.agregarProducto(producto));
+        }
     };
 
-    //Inicio Callbacks
+    // Inicio Callbacks
     Lista.prototype.buscarPorId = function(producto, id) {
         return producto.id == id;
     };
@@ -137,11 +150,13 @@ const tipoProducto = prod => {
     };
     //Fin Callbacks
 
+    // Función de búsqueda en la lista
     Lista.prototype.buscarProducto = function(elementoBuscado, callback) {
         let producto = this.listaProductos.filter(producto => callback(producto, elementoBuscado));
         return producto.length == 0 ? "[-] No se han podido encontrar productos" : producto;
     };
 
+    // Función de visualización de la lista
     Lista.prototype.mostrarLista = function() {
         console.log("\n[+] Mostrando Stock:\n\n      [     id     ][      Nombre      ][       Tipo       ][  Precio C/U  ][ Cantidad Stock ]\n");
         let i = 0;
@@ -161,24 +176,27 @@ const tipoProducto = prod => {
 
 /* Stock */{
     function Stock(){
+        // Se llama a la Lista, pues el prototipo de esta es anterior al de Stock en la cadena de prototipos
         Lista.call(this);
     }
 
-    //extends Lista
+    // extends Lista
     Stock.prototype = Object.create(Lista.prototype);
     Stock.prototype.constructor = Stock.prototype;
 
-
+    // Función que permite la modificación del nombre y el costo de un producto dado. Si no se pasan los parámetros, entoces queda sobreentendido que esos campos no deben modificarse
     Stock.prototype.modificarProducto = function(id, nombre = '', costo = '') {
         let producto = this.buscarProducto(id, this.buscarPorId)[0];
         if (typeof(producto) == 'string') {
             console.log(producto);
         } else {
+            // Operadores ternarios para evaluar si los campos deben cambiarse o no
             producto.nombre = nombre == '' ? producto.nombreProducto : nombre;
             producto.costo = costo == '' ? producto.costoProducto : costo;
         }
     };
     
+    // Función para la actualización del stock, en rederencia a la cantidad disponible de los productos
     Stock.prototype.actualizarStock = function(id, diferenciaStock) {
         let productoArr = this.buscarProducto(id, this.buscarPorId);
         if (typeof(productoArr) == 'string') {
@@ -200,6 +218,7 @@ const tipoProducto = prod => {
         }
     }
     
+    // Formalización del llamado a mostrarLista desde el stock
     Stock.prototype.mostrarStock = function() {
         this.mostrarLista();
     }
@@ -207,24 +226,31 @@ const tipoProducto = prod => {
 
 /* Carrito */{
     function Carrito(){
+        // Se llama a la Lista, pues el prototipo de esta es anterior al de Stock en la cadena de prototipos
         Lista.call(this);
     }
 
-    //extends Lista
+    // extends Lista
     Carrito.prototype = Object.create(Lista.prototype);
     Carrito.prototype.constructor = Carrito.prototype;
 
+    /*
+        Notar que la lista no contiene objetos del tipo Producto, sino que contiene objetos del tipo ProductoEnCarrito, por lo que algunas funciones deben sobreescribirse
+    */
+
+   // Sobreescritura de la callback de búsqueda por cantidad, para contemplar el tipo de dato usado, el cual tiene una propiedad de cantidadAniadida
     Carrito.prototype.buscarPorCantidad = function(producto, cantidad) {
         return producto.cantidadAniadida == cantidad;
     };
 
-    //@Override
+    // @Override - Agregado de un producto al carrito
     Carrito.prototype.agregarProducto = function(productoEnCarrito) {
-
+        // La función se ejecuta sólo si se le pasa un producto
         if(productoEnCarrito != undefined){
+            // Se determina si el producto ya fue agregado o no al carrito
             let elem = this.buscarProducto(productoEnCarrito.prod.id, this.buscarPorId, 0)[0];
             if(elem != undefined){
-
+                // Si ya fue aniadido, se evalúa si la suma entre la cantidad actual en carrito y la cantidad que se quiere agregar supera al stock existente - si lo hace, se imprime el mensaje de error
                 if(elem.cantidadAniadida + productoEnCarrito.cantidadAniadida <= productoEnCarrito.prod.cantidadProducto){
                     elem.cantidadAniadida += productoEnCarrito.cantidadAniadida;
                 }
@@ -233,27 +259,22 @@ const tipoProducto = prod => {
                 }
             }
             else if(productoEnCarrito.validarDisponibilidad()){
+                // Si no existe, se lo agrega al carrito, en caso de disponer de la cantidad deseada en Stock
                 this.listaProductos.push(productoEnCarrito);
             }
             else{
+                // En caso de no haber disponibilidad, se imprime un mensaje indicándolo
                 console.log("[-] No hay suficientes productos disponibles para satisfacer el pedido");
             }
         }
 
     };
 
-    //@Override
-    Carrito.prototype.agregarProductos = function(productosEnCarrito) {
-        if(productosEnCarrito != undefined){
-            productosEnCarrito.forEach((item) => {
-                this.agregarProducto(item);
-            });
-        }
-    };
-
-    //@Override
+    // @Override
+    // El flag permite anular el retorno del mensaje de error
     Carrito.prototype.buscarProducto = function(elementoBuscado, callback, flag /* opcional */) {
         let producto;
+        // Se determina si la callback es la de cantidad o no. En caso de serlo, se pasa por parámetro el objeto de tipo ProductoEnCarrito. Sino, se pasa el atributo prod, que es del tipo Producto
         if (callback == this.buscarPorCantidad) {
             producto = this.listaProductos.filter(producto => callback(producto, elementoBuscado));
         } else {
@@ -262,6 +283,7 @@ const tipoProducto = prod => {
         return producto.length == 0 && flag == undefined ? "[-] No se han podido encontrar productos" : producto;
     };
 
+    // Función para quitar el producto del carrito. Esta función admite, de manera opcional, un mensjae que indica el motivo de la eliminación del producto
     Carrito.prototype.quitarProducto = function(id, razon /* Opcional */ ) {
         let productoEliminado = false;
         this.listaProductos.forEach( (item) => {
@@ -279,11 +301,14 @@ const tipoProducto = prod => {
             }
 
         });
+
+        // Si no se encuentra el producto a eliminar, se imprime el mensaje:
         if (!productoEliminado) {
             console.log("[-] No se ha encontrado el producto a eliminar");
         }
     };
 
+    // Función para la impresión del carrito
     Carrito.prototype.mostrarCarrito = function() {
         console.log("\n[+] Mostrando Carrito:\n\n      [     id     ][      Nombre      ][       Tipo       ][  Precio C/U  ][ Cantidad Añadida ][     Total     ]\n");
         let i = 0;
@@ -299,6 +324,14 @@ const tipoProducto = prod => {
         console.log(aTamanio(" ", 107) + suma + "\n\n");
     };
 
+    /*
+        actualizarDatosCarrito: Este método es llamado una vez que se realiza una 
+        compra, y chequea el resto de carritos de manera tal que bajo la nueva
+        cantidad de productos en stock, no haya nadie con mayor cantidad
+        en carritos que la que hay disponible. Aunque funciona, lamentablemente lo descartamos
+        porque en una aplicacion real, no existen los suficientes recursos
+        para poder implementarlo.
+    */
     Carrito.prototype.actualizarDatosCarrito = function(){
         this.listaProductos.forEach( (item) => {
             if(!item.validarDisponibilidad()){
@@ -307,6 +340,7 @@ const tipoProducto = prod => {
         });
     };
 
+    // Función de confirmación de la compra, según fue descrito en el constructor del Cliente
     Carrito.prototype.confirmarCompra = function(stock) {
         this.listaProductos.forEach(producto => {
             let idProducto = producto.prod.getId();
@@ -339,6 +373,7 @@ const tipoProducto = prod => {
 
     }
 
+    /* SETTERS Y GETTERS */
     Object.defineProperty(Producto.prototype, "id", {
         get() {return this.getId()}
     });
@@ -348,6 +383,7 @@ const tipoProducto = prod => {
             if (nombre.trim() == '') {
                 console.log("[-] Ingrese el nombre del producto");
             } else {
+                // Eliminación de espacios en blanco innecesarios
                 this.nombreProducto = nombre.trim().split(/\s+/).join(' ');
             }
         }
@@ -373,6 +409,7 @@ const tipoProducto = prod => {
         }
     });
 
+    // Función de impresión del producto
     Producto.prototype.mostrarProducto = function() {
         console.log("\n[+] Mostrando Producto:");
         console.log(`\t>> Producto: ${this.nombreProducto}\n\t>> Costo: ${this.costoProducto}\n\t>> Cantidad Restante: ${this.cantidadProducto}`);
@@ -383,20 +420,23 @@ const tipoProducto = prod => {
 
 /* ProductoLineaBlanca */{
     function ProductoLineaBlanca(nombre, costo, cantidad, dimensiones){
+        // Llamado a Producto
         Producto.call(this, nombre, costo, cantidad);
 
         this.dimensiones = dimensiones;
     }
 
-    //extends Producto
+    // extends Producto
     ProductoLineaBlanca.prototype = Object.create(Producto.prototype);
     ProductoLineaBlanca.prototype.constructor = ProductoLineaBlanca.prototype;
     
+    /* SETTERS Y GETTERS */
     Object.defineProperty(ProductoLineaBlanca.prototype, "dimensiones", {
         get() {return this.dimensionesProducto.imprimirDimensiones()},
         set(dimensiones) {dimensiones == undefined ? console.log("[-] Por favor, definir dimensiones") : this.dimensionesProducto = dimensiones}
     });
 
+    // Extensión de la funcionalidad de impresión del producto
     ProductoLineaBlanca.prototype.mostrarProducto = function() {
         Producto.prototype.mostrarProducto.call(this);
         console.log(`\t>> Dimensiones: ${this.dimensiones}`);
@@ -410,14 +450,15 @@ const tipoProducto = prod => {
         this.fecha = fechaCaducidad;
     }
 
-    //extends Producto
+    // extends Producto
     ProductoPerecedero.prototype = Object.create(Producto.prototype);
     ProductoPerecedero.prototype.constructor = ProductoPerecedero.prototype;
 
+    /* SETTERS Y GETTERS */
     Object.defineProperty(ProductoPerecedero.prototype, "fecha", {
         set(fecha) {
             let fechaArr = fecha.split("/");
-        
+            // Validación del formato de la fecha
             if (fechaArr.length == 3) {
                 let fechaParse = Date.parse(`${fechaArr[1]}/${fechaArr[0]}/${fechaArr[2]}`);
                 
@@ -436,6 +477,7 @@ const tipoProducto = prod => {
         }
     });
 
+    // Extensión de la funcionalidad de impresión del producto
     ProductoPerecedero.prototype.mostrarProducto = function() {
         Producto.prototype.mostrarProducto.call(this);
         console.log(`\t>> Fecha de Vencimiento: ${this.fechaCaducidad}`);
@@ -452,29 +494,34 @@ const tipoProducto = prod => {
     //extends ProductoPerecedero
     ProductoPerecederoRefrigeracion.prototype = Object.create(ProductoPerecedero.prototype);
     ProductoPerecederoRefrigeracion.prototype.constructor = ProductoPerecederoRefrigeracion.prototype;
+    
+    /* SETTERS Y GETTERS */
+    Object.defineProperty(ProductoPerecederoRefrigeracion.prototype, "refrigeracion", {
+        set(tipo) {tipo == undefined ? console.log("[-] Por favor, definir tipo de refrigeracion") : this.tipoRefrigeracion = tipo}
+    });
 
+    // Extensión de la funcionalidad de impresión del producto
     ProductoPerecederoRefrigeracion.prototype.mostrarProducto = function() {
         ProductoPerecedero.prototype.mostrarProducto.call(this);
         console.log(`\t>> Tipo de Refrigeracion: ${this.tipoRefrigeracion}`);
     }
 
-    Object.defineProperty(ProductoPerecederoRefrigeracion.prototype, "refrigeracion", {
-        set(tipo) {tipo == undefined ? console.log("[-] Por favor, definir tipo de refrigeracion") : this.tipoRefrigeracion = tipo}
-    });
 }
 
 // --- START --- : Objetos Auxiliares
 
 /* ProductoEnCarrito */{
     function ProductoEnCarrito(prod, cantidadAniadida){
-        this.prod = prod;
+        this.prod = prod; // prod: Producto
         this.cantidadAniadida = cantidadAniadida;
     }
 
+    // Función que valida la disponibilidad de un producto al momento de añadirlo a un carrito
     ProductoEnCarrito.prototype.validarDisponibilidad = function(){
         return this.prod.cantidadProducto >= this.cantidadAniadida;
     };
 
+    // Extensión de la funcionalidad de impresión del producto
     ProductoEnCarrito.prototype.mostrarProducto = function() {
         this.prod.mostrarProducto();
         console.log(`\t>> Cantidad Añadida: ${this.cantidadAniadida}`);
@@ -488,10 +535,7 @@ const tipoProducto = prod => {
         this.profundidad = profundidad;
     }
 
-    Dimensiones.prototype.imprimirDimensiones = function(){
-        return this.altoProducto + " x " + this.anchoProducto + " x " + this.profundidadProducto;
-    };
-
+    /* SETTERS Y GETTERS */
     Object.defineProperty(Dimensiones.prototype, "alto", {
         set(alto) {
             if (alto> 0) {
@@ -501,7 +545,7 @@ const tipoProducto = prod => {
             }
         }
     });
-
+    
     Object.defineProperty(Dimensiones.prototype, "ancho", {
         set(ancho) {
             if (ancho> 0) {
@@ -511,7 +555,7 @@ const tipoProducto = prod => {
             }
         }
     });
-
+    
     Object.defineProperty(Dimensiones.prototype, "profundidad", {
         set(profundidad) {
             if (profundidad> 0) {
@@ -521,6 +565,11 @@ const tipoProducto = prod => {
             }
         }
     });
+
+    // Función de impresión de las dimensiones
+    Dimensiones.prototype.imprimirDimensiones = function(){
+        return this.altoProducto + " x " + this.anchoProducto + " x " + this.profundidadProducto;
+    };
 }
 
 // --- START --- : Programa
@@ -680,27 +729,5 @@ console.log(">> A continuación se realiza la compra; se intentarán comprar 10 
 cliente.comprar(stock);
 cliente.verCarrito();
 stock.mostrarStock();
-console.log(">> Noar que la cantidad del producto 1 no cambió. La del 2 sí, debido a que de este sí había stock");
+console.log(">> Notar que la cantidad del producto 1 no cambió. La del 2 sí, debido a que de este sí había stock");
 
-
-
-// cliente1 = new Cliente("Juan", "");
-// cliente1 = new Cliente("  Juan Roger   ", "Perez");
-// console.log(cliente1);
-// let cliente2 = new Cliente("Marcelo", "Beiner");
-// let cliente3 = new Cliente("Hipolito", "Gomez");
-// console.log(cliente2, cliente2.getId(), cliente2.id);
-// console.log(cliente3, cliente3.getId(), cliente3.id);
-
-// cliente1.agregarProducto(producto1, 2);
-// console.log(cliente1, cliente1.getId(), cliente1.id);
-// stock.actualizarStock(1, -1);
-// stock.mostrarStock();
-// cliente.agregarProducto(producto2, 40);
-// cliente.verCarrito();
-//cliente.comprar(stock);
-//cliente.verCarrito();
-//stock.mostrarStock();
-
-//console.log(cliente.buscarProductoPorId(1));
-//console.log(cliente.buscarProductoPorCantidad(79));
